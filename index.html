@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fotos por carpetas</title>
+<meta name="description" content="Organiza tus fotos en carpetas desde el móvil y expórtalas en ZIP.">
+<meta property="og:title" content="Fotos por carpetas">
+<meta property="og:description" content="Organiza tus fotos en carpetas desde el móvil y expórtalas en ZIP.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#050806">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mis fotos">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+<link rel="icon" type="image/svg+xml" href="./icon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root{--bg:#f2f4f7;--surface:#fff;--ink:#111b26;--mute:#5d6b7a;--line:#d9dfe6;--accent:#2446ff;--on-accent:#fff;--danger:#c62f2f;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f141a;--surface:#18202a;--ink:#eaf0f6;--mute:#93a1b1;--line:#2a3541;--accent:#7f95ff;--on-accent:#0c1030;--danger:#ff8a80;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f141a;--surface:#18202a;--ink:#eaf0f6;--mute:#93a1b1;--line:#2a3541;--accent:#7f95ff;--on-accent:#0c1030;--danger:#ff8a80;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.4 Figtree,system-ui,-apple-system,"Segoe UI",sans-serif;padding-bottom:132px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+button{font:inherit;color:inherit;cursor:pointer}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:11;background:var(--bg);padding:14px 14px 10px;border-bottom:1px solid var(--line)}
+.top{display:flex;align-items:center;justify-content:space-between}
+h1{font-size:24px;font-weight:800;margin:0;letter-spacing:-.02em}
+.icon{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:6px 12px;font-weight:600}
+.layout{display:grid;grid-template-columns:132px 1fr;align-items:start}
+@media (min-width:600px){.layout{grid-template-columns:220px 1fr}}
+#chips{position:sticky;top:calc(env(safe-area-inset-top,0px) + 62px);display:flex;flex-direction:column;gap:6px;padding:10px 6px 10px 10px;max-height:calc(100vh - 200px);overflow-y:auto}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px;font-weight:600;display:flex;gap:6px;align-items:center;justify-content:space-between;text-align:left;width:100%}
+.chip b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.chip span{color:var(--mute);font-weight:400;font-size:13px;flex:none}
+.chip.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.chip.on span{color:var(--on-accent);opacity:.8}
+.chip.add{border-style:dashed;background:transparent;color:var(--accent);justify-content:center}
+#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:3px;padding:3px}
+.th{aspect-ratio:1;border:0;padding:0;background:var(--line);border-radius:6px;overflow:hidden}
+.th img{width:100%;height:100%;object-fit:cover;display:block}
+.empty{grid-column:1/-1;text-align:center;color:var(--mute);padding:56px 28px;margin:0}
+#warn{margin:10px 14px 0;padding:10px 12px;border-radius:10px;background:var(--surface);border:1px solid var(--danger);font-size:14px}
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:12;background:var(--surface);border-top:1px solid var(--line);padding:10px 14px calc(12px + env(safe-area-inset-bottom,0px))}
+#dest{font-size:14px;color:var(--mute);margin:0 0 8px;text-align:center}
+#dest b{color:var(--ink)}
+.btns{display:flex;gap:10px}
+.btn{flex:1;border:1px solid var(--line);background:var(--bg);border-radius:14px;padding:14px;font-weight:600}
+.btn.main{flex:2;background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:800;font-size:17px}
+.btn.danger{color:var(--danger)}
+dialog{border:0;border-radius:20px;padding:18px;width:min(92vw,420px);background:var(--surface);color:var(--ink);max-height:88vh;overflow:auto}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+dialog h2{margin:0 0 12px;font-size:19px}
+dialog p{margin:0 0 12px;color:var(--mute)}
+dialog input[type=text],dialog select{width:100%;font:inherit;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);margin-bottom:12px}
+dialog img{width:100%;max-height:52vh;object-fit:contain;border-radius:10px;background:var(--bg);margin-bottom:12px}
+.row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.list{display:flex;flex-direction:column;gap:8px}
+.list .btn{text-align:left;flex:none}
+.sug{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:5px 12px;font-size:14px}
+#toast{position:fixed;left:50%;bottom:calc(120px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:999px;font-weight:600;font-size:14px;z-index:30;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;text-align:center}
+#toast.show{opacity:1}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){#toast{transition:none}}
+:root{--bg:#f4f6f8;--surface:#fff;--ink:#0e1a26;--mute:#5b6876;--line:#dde3ea;--accent:#1747b8;--on-accent:#fff;--danger:#b42318;--shadow:0 1px 2px rgba(14,26,38,.06),0 4px 14px rgba(14,26,38,.06)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d1218;--surface:#151c25;--ink:#e8eef5;--mute:#8d9bab;--line:#243040;--accent:#6c8cff;--on-accent:#0a1030;--danger:#ff8a80;--shadow:0 1px 2px rgba(0,0,0,.4)}}
+:root[data-theme="dark"]{--bg:#0d1218;--surface:#151c25;--ink:#e8eef5;--mute:#8d9bab;--line:#243040;--accent:#6c8cff;--on-accent:#0a1030;--danger:#ff8a80;--shadow:0 1px 2px rgba(0,0,0,.4)}
+body{-webkit-font-smoothing:antialiased}
+body::before{background:var(--surface)}
+header{padding:12px 16px;background:var(--surface)}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:36px;height:36px;flex:none}
+h1{font-size:18px;line-height:1.15}
+#sub{margin:2px 0 0;font-size:13px;color:var(--mute)}
+.icon{display:inline-flex;align-items:center;gap:6px;font-size:14px;box-shadow:var(--shadow)}
+#chips{top:calc(env(safe-area-inset-top,0px) + 61px);padding:12px 6px 12px 12px;gap:4px}
+#chips::before{content:"Carpetas";font-size:13px;font-weight:600;color:var(--mute);padding:2px 4px 6px}
+.chip{border:1px solid transparent;background:transparent;font-size:15px}
+.chip:hover{background:var(--surface)}
+.chip.on{background:var(--surface);border-color:var(--line);color:var(--ink);box-shadow:inset 3px 0 0 var(--accent),var(--shadow)}
+.chip.on span{color:var(--accent);opacity:1;font-weight:600}
+.chip.add{border:1px dashed var(--line);margin-top:6px;color:var(--accent)}
+#grid{gap:6px;padding:12px 12px 12px 6px}
+.th{border-radius:8px;box-shadow:var(--shadow)}
+.bar{box-shadow:0 -6px 20px rgba(14,26,38,.08)}
+#dest{font-size:13px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:12px}
+.btn.main{box-shadow:0 2px 8px rgba(23,71,184,.3)}
+.list .btn{justify-content:flex-start}
+dialog{border-radius:18px;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+#fname,.sug{text-transform:uppercase}
+.chip b{font-size:14px;letter-spacing:.02em}
+:root{--bg:#050806;--surface:#0f1411;--ink:#f1f7f3;--mute:#8fa398;--line:#1f2b24;--accent:#00c853;--on-accent:#03140a;--danger:#ff6b5e;--shadow:0 1px 2px rgba(0,0,0,.6);color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#050806;--surface:#0f1411;--ink:#f1f7f3;--mute:#8fa398;--line:#1f2b24;--accent:#00c853;--on-accent:#03140a;--danger:#ff6b5e;--shadow:0 1px 2px rgba(0,0,0,.6)}}
+:root[data-theme="dark"]{--bg:#050806;--surface:#0f1411;--ink:#f1f7f3;--mute:#8fa398;--line:#1f2b24;--accent:#00c853;--on-accent:#03140a;--danger:#ff6b5e;--shadow:0 1px 2px rgba(0,0,0,.6)}
+.btn.main{box-shadow:0 2px 14px rgba(0,200,83,.35)}
+.bar{box-shadow:0 -6px 24px rgba(0,0,0,.6)}
+.bar .btn{position:relative;overflow:hidden}
+.ov{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:0}
+</style>
+</head>
+<body>
+<header>
+  <div class="top"><div class="brand"><svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="var(--accent)"/><path d="M7 12.5a2 2 0 0 1 2-2h1.6l1.1-1.7a1 1 0 0 1 .85-.45h3.9a1 1 0 0 1 .85.45l1.1 1.7H23a2 2 0 0 1 2 2V21a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2z" fill="var(--on-accent)"/><circle cx="16" cy="16.8" r="3.6" fill="var(--accent)"/><circle cx="16" cy="16.8" r="1.7" fill="var(--on-accent)"/></svg><div><h1>Mis fotos</h1><p id="sub"></p></div></div><button class="icon" data-act="menu" aria-label="Opciones de la carpeta"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>Opciones</button></div>
+</header>
+<div id="warn" hidden>Este navegador no permite guardar datos. Las fotos se perderán al cerrar la página.</div>
+<div class="layout"><nav id="chips" aria-label="Carpetas"></nav><main id="grid"></main></div>
+<div class="bar">
+  <p id="dest"></p>
+  <div class="btns">
+    <label class="btn"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-9 9"/></svg>Galería<input id="gal" class="ov" type="file" accept="image/*" multiple></label>
+    <label class="btn main"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Hacer foto<input id="cam" class="ov" type="file" accept="image/*" capture="environment"></label>
+  </div>
+</div>
+<dialog id="sheet"></dialog>
+<div id="toast" role="status"></div>
+<script>
+const INBOX={id:'inbox',name:'SIN CLASIFICAR'};
+const EXT={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif','image/heic':'heic','image/heif':'heif'};
+const OKEXT=['jpg','png','webp','gif'];
+let folders=[INBOX],photos=[],cur='inbox',db=null,urls={};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const fol=id=>folders.find(f=>f.id===id)||INBOX;
+const count=id=>photos.filter(p=>p.folder===id).length;
+
+function openDB(){return new Promise((ok,no)=>{try{const r=indexedDB.open('fotos-carpetas',1);r.onupgradeneeded=()=>{r.result.createObjectStore('folders',{keyPath:'id'});r.result.createObjectStore('photos',{keyPath:'id'})};r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)}catch(e){no(e)}})}
+function put(s,v){if(!db)return;try{db.transaction(s,'readwrite').objectStore(s).put(v)}catch(e){}}
+function del(s,id){if(!db)return;try{db.transaction(s,'readwrite').objectStore(s).delete(id)}catch(e){}}
+function getAll(s){return new Promise(ok=>{try{const r=db.transaction(s).objectStore(s).getAll();r.onsuccess=()=>ok(r.result||[]);r.onerror=()=>ok([])}catch(e){ok([])}})}
+
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('show'),2200)}
+function thumb(p){return urls[p.id]||(urls[p.id]=URL.createObjectURL(p.blob))}
+
+function render(){
+  $('#chips').innerHTML=folders.map(f=>`<button class="chip${f.id===cur?' on':''}" data-act="pick" data-id="${f.id}"><b>${esc(f.name)}</b><span>${count(f.id)}</span></button>`).join('')+`<button class="chip add" data-act="newf">+ Carpeta</button>`;
+  const list=photos.filter(p=>p.folder===cur).sort((a,b)=>b.t-a.t);
+  $('#grid').innerHTML=list.length?list.map(p=>`<button class="th" data-act="view" data-id="${p.id}" aria-label="Abrir foto"><img src="${thumb(p)}" alt="" loading="lazy"></button>`).join(''):`<p class="empty">${cur==='inbox'?'Aún no hay fotos. Toca “Hacer foto” para empezar.':'Esta carpeta está vacía. Las fotos que hagas se guardarán aquí.'}</p>`;
+  $('#dest').innerHTML=`Las fotos nuevas se guardan en <b>${esc(fol(cur).name)}</b>`;
+  $('#sub').textContent=`${photos.length} ${photos.length===1?'foto':'fotos'} en ${folders.length} ${folders.length===1?'carpeta':'carpetas'}`;
+  const on=$('.chip.on');if(on)on.scrollIntoView({inline:'nearest',block:'nearest'});
+  try{localStorage.setItem('fotos-cur',cur)}catch(e){}
+}
+
+async function addFiles(fs){
+  let n=0;
+  for(const f of fs){
+    if(!f.type.startsWith('image/'))continue;
+    const p={id:uid(),folder:cur,blob:f,type:f.type,t:Date.now()+n};
+    photos.push(p);put('photos',p);n++;
+  }
+  render();
+  if(n)toast(n===1?`Guardada en ${fol(cur).name}`:`${n} fotos guardadas en ${fol(cur).name}`);
+}
+
+const sh=$('#sheet');
+function sheet(h){sh.innerHTML=h;if(!sh.open)sh.showModal();const i=sh.querySelector('input[type=text]');if(i)setTimeout(()=>i.focus(),50)}
+sh.addEventListener('click',e=>{if(e.target===sh)sh.close()});
+
+function newFolderSheet(){
+  const used=folders.map(f=>f.name.toLowerCase());
+  const sug=['Familia','Viajes','Comida','Documentos','Trabajo'].filter(s=>!used.includes(s.toLowerCase()));
+  sheet(`<h2>Nueva carpeta</h2><input type="text" id="fname" maxlength="40" placeholder="Nombre de la carpeta" autocomplete="off">
+  <div class="row">${sug.map(s=>`<button class="sug" data-act="sug" data-v="${s}">${s}</button>`).join('')}</div>
+  <div class="row"><button class="btn" data-act="close">Cancelar</button><button class="btn main" data-act="create">Crear</button></div>`);
+}
+function renameSheet(){
+  sheet(`<h2>Renombrar carpeta</h2><input type="text" id="fname" maxlength="40" value="${esc(fol(cur).name)}" autocomplete="off">
+  <div class="row"><button class="btn" data-act="close">Cancelar</button><button class="btn main" data-act="rename">Guardar</button></div>`);
+}
+function menuSheet(){
+  const f=fol(cur),inbox=cur==='inbox';
+  sheet(`<h2>${esc(f.name)}</h2><div class="list">
+  ${inbox?'':'<button class="btn" data-act="ren">Renombrar carpeta</button>'}
+  <button class="btn" data-act="sharef">Compartir las fotos de esta carpeta</button>
+  <button class="btn" data-act="zipf">Descargar esta carpeta (ZIP)</button>
+  <button class="btn" data-act="zipall">Descargar todo (ZIP con carpetas)</button>
+  ${inbox?'':'<button class="btn danger" data-act="delf">Eliminar carpeta</button>'}
+  <button class="btn" data-act="close">Cerrar</button></div>`);
+}
+function viewSheet(id){
+  const p=photos.find(x=>x.id===id);if(!p)return;
+  const d=new Date(p.t).toLocaleString('es-ES',{dateStyle:'medium',timeStyle:'short'});
+  sheet(`<img src="${thumb(p)}" alt="Foto"><p>${d}</p>
+  <select id="mv" data-id="${p.id}" aria-label="Mover a carpeta">${folders.map(f=>`<option value="${f.id}"${f.id===p.folder?' selected':''}>${p.folder===f.id?'En: ':'Mover a: '}${esc(f.name)}</option>`).join('')}</select>
+  <div class="row"><button class="btn main" data-act="share1" data-id="${p.id}">Compartir</button><button class="btn" data-act="dl1" data-id="${p.id}">Descargar</button><button class="btn danger" data-act="delp" data-id="${p.id}">Eliminar</button></div>
+  <button class="btn" style="width:100%" data-act="close">Cerrar</button>`);
+}
+
+function pname(p,i){const d=new Date(p.t),z=n=>String(n).padStart(2,'0');return `${safe(fol(p.folder).name)}-${d.getFullYear()}${z(d.getMonth()+1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}${z(d.getSeconds())}${i?'-'+i:''}.${EXT[p.type]||'jpg'}`}
+const safe=s=>s.replace(/[\\\/:*?"<>|]/g,'-').trim()||'carpeta';
+async function save(filename,data){
+  try{
+    const blob=data instanceof Blob?data:new Blob([data]);
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }catch(e){toast('No se pudo descargar')}
+}
+async function share(list){
+  if(!list.length){toast('No hay fotos que compartir');return}
+  try{
+    const files=list.map((p,i)=>new File([p.blob],pname(p,i),{type:p.type||'image/jpeg'}));
+    if(!navigator.canShare||!navigator.canShare({files})){toast('Compartir no está disponible aquí. Usa Descargar');return}
+    await navigator.share({files});
+  }catch(e){if(!e||e.name!=='AbortError')toast('No se pudo abrir el menú de compartir')}
+}
+async function zip(list,filename){
+  if(!list.length){toast('No hay fotos que descargar');return}
+  if(!window.JSZip){toast('No se pudo cargar el compresor ZIP');return}
+  toast('Preparando ZIP…');
+  const z=new JSZip(),seen=new Set();
+  list.forEach(([dir,p])=>{let i=0,n;do{n=(dir?safe(dir)+'/':'')+pname(p,i++)}while(seen.has(n));seen.add(n);z.file(n,p.blob)});
+  const blob=await z.generateAsync({type:'blob',compression:'STORE'});
+  await save(filename,blob);
+}
+
+document.addEventListener('click',async e=>{
+  const b=e.target.closest('[data-act]');if(!b)return;
+  const a=b.dataset.act,id=b.dataset.id;
+  if(a==='pick'){cur=id;render()}
+  else if(a==='newf')newFolderSheet();
+  else if(a==='sug'){$('#fname').value=b.dataset.v;$('#fname').focus()}
+  else if(a==='create'){
+    const n=$('#fname').value.trim();if(!n)return;
+    const N=n.toUpperCase();let f=folders.find(x=>x.name===N);
+    if(!f){f={id:uid(),name:N};folders.push(f);put('folders',f)}
+    cur=f.id;sh.close();render();toast(`Carpeta “${f.name}” lista`);
+  }
+  else if(a==='menu')menuSheet();
+  else if(a==='ren')renameSheet();
+  else if(a==='rename'){
+    const n=$('#fname').value.trim();if(!n)return;
+    const f=fol(cur);f.name=n.toUpperCase();put('folders',f);sh.close();render();
+  }
+  else if(a==='delf'){
+    const c=count(cur);
+    sheet(`<h2>¿Eliminar “${esc(fol(cur).name)}”?</h2><p>${c?`Las ${c} fotos pasarán a “SIN CLASIFICAR”. `:''}Las fotos no se borran.</p>
+    <div class="row"><button class="btn" data-act="close">Cancelar</button><button class="btn danger" data-act="delf2">Eliminar carpeta</button></div>`);
+  }
+  else if(a==='delf2'){
+    photos.filter(p=>p.folder===cur).forEach(p=>{p.folder='inbox';put('photos',p)});
+    folders=folders.filter(f=>f.id!==cur);del('folders',cur);cur='inbox';sh.close();render();
+  }
+  else if(a==='zipf'){sh.close();await zip(photos.filter(p=>p.folder===cur).map(p=>['',p]),safe(fol(cur).name)+'.zip')}
+  else if(a==='zipall'){sh.close();await zip(photos.map(p=>[fol(p.folder).name,p]),'mis-fotos.zip')}
+  else if(a==='share1'){await share(photos.filter(x=>x.id===id))}
+  else if(a==='sharef'){sh.close();await share(photos.filter(p=>p.folder===cur))}
+  else if(a==='view')viewSheet(id);
+  else if(a==='dl1'){
+    const p=photos.find(x=>x.id===id);if(!p)return;
+    const ext=EXT[p.type]||'jpg';
+    if(OKEXT.includes(ext))await save(pname(p,0),p.blob);else await zip([['',p]],safe(fol(p.folder).name)+'.zip');
+  }
+  else if(a==='delp'){
+    const p=photos.find(x=>x.id===id);if(!p)return;
+    photos=photos.filter(x=>x.id!==id);del('photos',id);
+    if(urls[id]){URL.revokeObjectURL(urls[id]);delete urls[id]}
+    sh.close();render();toast('Foto eliminada');
+  }
+  else if(a==='camera'){$('#cam').click()}
+  else if(a==='gallery'){$('#gal').click()}
+  else if(a==='close')sh.close();
+});
+sh.addEventListener('change',e=>{
+  if(e.target.id!=='mv')return;
+  const p=photos.find(x=>x.id===e.target.dataset.id);if(!p)return;
+  p.folder=e.target.value;put('photos',p);sh.close();render();toast(`Movida a ${fol(p.folder).name}`);
+});
+sh.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='fname'){const b=sh.querySelector('[data-act=create],[data-act=rename]');if(b)b.click()}});
+for(const id of ['cam','gal'])$('#'+id).addEventListener('change',e=>{addFiles([...e.target.files]);e.target.value=''});
+
+(async()=>{
+  try{
+    db=await openDB();
+    const fs=await getAll('folders');fs.forEach(f=>{if(f.name!==f.name.toUpperCase()){f.name=f.name.toUpperCase();put('folders',f)}});folders=[INBOX,...fs.sort((a,b)=>a.name.localeCompare(b.name,'es'))];
+    photos=await getAll('photos');
+  }catch(e){db=null;$('#warn').hidden=false}
+  try{const c=localStorage.getItem('fotos-cur');if(c&&folders.some(f=>f.id===c))cur=c}catch(e){}
+  render();
+})();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>

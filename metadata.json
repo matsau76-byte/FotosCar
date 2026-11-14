@@ -1,0 +1,6 @@
+{
+  "name": "Fotos por carpetas",
+  "description": "Organiza tus fotos en carpetas desde el móvil y expórtalas en ZIP.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
