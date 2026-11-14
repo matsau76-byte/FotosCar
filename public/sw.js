@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fotos-carpetas-v1';
+const CACHE_NAME = 'fotos-carpetas-v4';
 const CORE_ASSETS = [
   './',
   './index.html',
